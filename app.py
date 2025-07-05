@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -83,7 +83,7 @@ if df is not None:
 
         # 1. Booking counts by month
         temp1 = filtered_df.groupby('arrival_date_month').size().reindex(month_order)
-        if temp1.notna().any() and temp1.sum() > 0:
+        if not temp1.empty and temp1.sum() > 0:
             fig1 = px.bar(temp1.reset_index(), x='arrival_date_month', y=0, labels={'0': 'Booking Count', 'arrival_date_month': 'Month'}, title='Bookings by Month')
             st.plotly_chart(fig1, use_container_width=True)
             st.caption("Shows seasonality in bookings.")
@@ -100,7 +100,7 @@ if df is not None:
 
         # 3. Most common market segments (Pie)
         market_seg_counts = filtered_df['market_segment'].value_counts().reset_index()
-        if not market_seg_counts.empty and market_seg_counts['market_segment'].sum() > 0:
+        if not market_seg_counts.empty:
             fig2 = px.pie(market_seg_counts, values='market_segment', names='index', title="Market Segment Distribution")
             st.plotly_chart(fig2, use_container_width=True)
         else:
@@ -115,7 +115,7 @@ if df is not None:
 
         # 5. ADR over time (Line)
         adr_month = filtered_df.groupby('arrival_date_month')['adr'].mean().reindex(month_order).reset_index()
-        if adr_month['adr'].notna().any() and adr_month['adr'].sum() > 0:
+        if not adr_month.empty and adr_month['adr'].notna().any():
             fig3 = px.line(adr_month, x='arrival_date_month', y='adr', title='Average Daily Rate (ADR) by Month')
             st.plotly_chart(fig3, use_container_width=True)
         else:
@@ -123,7 +123,7 @@ if df is not None:
 
         # 6. Room type demand (Bar)
         room_counts = filtered_df['assigned_room_type'].value_counts().reset_index()
-        if not room_counts.empty and room_counts['assigned_room_type'].sum() > 0:
+        if not room_counts.empty:
             fig4 = px.bar(room_counts, x='index', y='assigned_room_type', labels={'index': 'Room Type', 'assigned_room_type': 'Count'}, title='Assigned Room Type Distribution')
             st.plotly_chart(fig4, use_container_width=True)
         else:
@@ -131,7 +131,7 @@ if df is not None:
 
         # 7. Special requests (Bar)
         special_req = filtered_df['total_of_special_requests'].value_counts().sort_index().reset_index()
-        if not special_req.empty and special_req['total_of_special_requests'].sum() > 0:
+        if not special_req.empty:
             fig5 = px.bar(special_req, x='index', y='total_of_special_requests', labels={'index': 'Special Requests', 'total_of_special_requests': 'Count'}, title='Special Requests Count')
             st.plotly_chart(fig5, use_container_width=True)
         else:
@@ -139,7 +139,7 @@ if df is not None:
 
         # 8. Country-wise bookings (Top 10 Bar)
         country_counts = filtered_df['country'].value_counts().head(10).reset_index()
-        if not country_counts.empty and country_counts['country'].sum() > 0:
+        if not country_counts.empty:
             fig6 = px.bar(country_counts, x='index', y='country', labels={'index': 'Country', 'country': 'Bookings'}, title='Top 10 Countries by Booking Count')
             st.plotly_chart(fig6, use_container_width=True)
         else:
@@ -154,7 +154,7 @@ if df is not None:
 
         # 10. Booking changes (Bar)
         booking_chg = filtered_df['booking_changes'].value_counts().sort_index().reset_index()
-        if not booking_chg.empty and booking_chg['booking_changes'].sum() > 0:
+        if not booking_chg.empty:
             fig7 = px.bar(booking_chg, x='index', y='booking_changes', labels={'index': 'Booking Changes', 'booking_changes': 'Count'}, title='Booking Changes')
             st.plotly_chart(fig7, use_container_width=True)
             st.caption("How often bookings are modified.")
@@ -163,7 +163,7 @@ if df is not None:
 
         # 11. Customer type breakdown (Pie)
         customer_type_counts = filtered_df['customer_type'].value_counts().reset_index()
-        if not customer_type_counts.empty and customer_type_counts['customer_type'].sum() > 0:
+        if not customer_type_counts.empty:
             fig8 = px.pie(customer_type_counts, values='customer_type', names='index', title="Customer Types")
             st.plotly_chart(fig8, use_container_width=True)
         else:
@@ -175,7 +175,7 @@ if df is not None:
         else:
             st.info("No data to download with current filter.")
 
-    # ============= CLASSIFICATION TAB (Confusion, ROC Plotly) =============
+    # ============= CLASSIFICATION TAB =============
     with tabs[1]:
         st.header("Booking Cancellation Prediction (Classification)")
         st.markdown("""
@@ -269,7 +269,7 @@ if df is not None:
         else:
             st.warning("Not enough data for classification modeling. Please check your filters or upload more data.")
 
-    # ============= CLUSTERING TAB (KMeans, Plotly Elbow/Persona) =============
+    # ============= CLUSTERING TAB =============
     with tabs[2]:
         st.header("Customer Segmentation (Clustering)")
         st.markdown("Segment customers using KMeans clustering. Adjust the number of clusters and download labeled data.")
@@ -307,7 +307,7 @@ if df is not None:
         else:
             st.warning("Not enough data for clustering. Please check your filters or upload more data.")
 
-    # ============= ASSOCIATION RULE MINING TAB (Apriori) =============
+    # ============= ASSOCIATION RULE MINING TAB =============
     with tabs[3]:
         st.header("Association Rule Mining (Apriori)")
         st.markdown("Discover frequent itemsets and associations in hotel bookings.")
@@ -336,7 +336,7 @@ if df is not None:
         else:
             st.info("Please select at least 2 columns.")
 
-    # ============= REGRESSION TAB (Plotly Actual vs Predicted) =============
+    # ============= REGRESSION TAB =============
     with tabs[4]:
         st.header("Regression Analysis")
         st.markdown("Apply regression models to extract business insights.")

@@ -58,7 +58,7 @@ if df is not None:
         "Regression"
     ])
 
-    # ============== DATA VISUALIZATION TAB (Plotly only, robust checks) ==============
+    # ============== DATA VISUALIZATION TAB (robust) ==============
     with tabs[0]:
         st.header("Data Visualization")
         st.markdown("**Explore and filter descriptive insights from the hotel bookings dataset.**")
@@ -83,7 +83,7 @@ if df is not None:
 
         # 1. Booking counts by month
         temp1 = filtered_df.groupby('arrival_date_month').size().reindex(month_order)
-        if temp1.sum() > 0:
+        if temp1.notna().any() and temp1.sum() > 0:
             fig1 = px.bar(temp1.reset_index(), x='arrival_date_month', y=0, labels={'0': 'Booking Count', 'arrival_date_month': 'Month'}, title='Bookings by Month')
             st.plotly_chart(fig1, use_container_width=True)
             st.caption("Shows seasonality in bookings.")
@@ -100,7 +100,7 @@ if df is not None:
 
         # 3. Most common market segments (Pie)
         market_seg_counts = filtered_df['market_segment'].value_counts().reset_index()
-        if len(market_seg_counts) > 0:
+        if not market_seg_counts.empty and market_seg_counts['market_segment'].sum() > 0:
             fig2 = px.pie(market_seg_counts, values='market_segment', names='index', title="Market Segment Distribution")
             st.plotly_chart(fig2, use_container_width=True)
         else:
@@ -115,7 +115,7 @@ if df is not None:
 
         # 5. ADR over time (Line)
         adr_month = filtered_df.groupby('arrival_date_month')['adr'].mean().reindex(month_order).reset_index()
-        if not adr_month['adr'].isna().all():
+        if adr_month['adr'].notna().any() and adr_month['adr'].sum() > 0:
             fig3 = px.line(adr_month, x='arrival_date_month', y='adr', title='Average Daily Rate (ADR) by Month')
             st.plotly_chart(fig3, use_container_width=True)
         else:
@@ -123,7 +123,7 @@ if df is not None:
 
         # 6. Room type demand (Bar)
         room_counts = filtered_df['assigned_room_type'].value_counts().reset_index()
-        if len(room_counts) > 0:
+        if not room_counts.empty and room_counts['assigned_room_type'].sum() > 0:
             fig4 = px.bar(room_counts, x='index', y='assigned_room_type', labels={'index': 'Room Type', 'assigned_room_type': 'Count'}, title='Assigned Room Type Distribution')
             st.plotly_chart(fig4, use_container_width=True)
         else:
@@ -131,7 +131,7 @@ if df is not None:
 
         # 7. Special requests (Bar)
         special_req = filtered_df['total_of_special_requests'].value_counts().sort_index().reset_index()
-        if len(special_req) > 0:
+        if not special_req.empty and special_req['total_of_special_requests'].sum() > 0:
             fig5 = px.bar(special_req, x='index', y='total_of_special_requests', labels={'index': 'Special Requests', 'total_of_special_requests': 'Count'}, title='Special Requests Count')
             st.plotly_chart(fig5, use_container_width=True)
         else:
@@ -139,7 +139,7 @@ if df is not None:
 
         # 8. Country-wise bookings (Top 10 Bar)
         country_counts = filtered_df['country'].value_counts().head(10).reset_index()
-        if len(country_counts) > 0:
+        if not country_counts.empty and country_counts['country'].sum() > 0:
             fig6 = px.bar(country_counts, x='index', y='country', labels={'index': 'Country', 'country': 'Bookings'}, title='Top 10 Countries by Booking Count')
             st.plotly_chart(fig6, use_container_width=True)
         else:
@@ -154,7 +154,7 @@ if df is not None:
 
         # 10. Booking changes (Bar)
         booking_chg = filtered_df['booking_changes'].value_counts().sort_index().reset_index()
-        if len(booking_chg) > 0:
+        if not booking_chg.empty and booking_chg['booking_changes'].sum() > 0:
             fig7 = px.bar(booking_chg, x='index', y='booking_changes', labels={'index': 'Booking Changes', 'booking_changes': 'Count'}, title='Booking Changes')
             st.plotly_chart(fig7, use_container_width=True)
             st.caption("How often bookings are modified.")
@@ -163,7 +163,7 @@ if df is not None:
 
         # 11. Customer type breakdown (Pie)
         customer_type_counts = filtered_df['customer_type'].value_counts().reset_index()
-        if len(customer_type_counts) > 0:
+        if not customer_type_counts.empty and customer_type_counts['customer_type'].sum() > 0:
             fig8 = px.pie(customer_type_counts, values='customer_type', names='index', title="Customer Types")
             st.plotly_chart(fig8, use_container_width=True)
         else:

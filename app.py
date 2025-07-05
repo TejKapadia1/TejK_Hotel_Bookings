@@ -58,7 +58,7 @@ if df is not None:
         "Regression"
     ])
 
-    # ============== DATA VISUALIZATION TAB (Plotly only) ==============
+    # ============== DATA VISUALIZATION TAB (Plotly only, robust checks) ==============
     with tabs[0]:
         st.header("Data Visualization")
         st.markdown("**Explore and filter descriptive insights from the hotel bookings dataset.**")
@@ -83,61 +83,97 @@ if df is not None:
 
         # 1. Booking counts by month
         temp1 = filtered_df.groupby('arrival_date_month').size().reindex(month_order)
-        fig1 = px.bar(temp1.reset_index(), x='arrival_date_month', y=0, labels={'0': 'Booking Count', 'arrival_date_month': 'Month'}, title='Bookings by Month')
-        st.plotly_chart(fig1, use_container_width=True)
-        st.caption("Shows seasonality in bookings.")
+        if temp1.sum() > 0:
+            fig1 = px.bar(temp1.reset_index(), x='arrival_date_month', y=0, labels={'0': 'Booking Count', 'arrival_date_month': 'Month'}, title='Bookings by Month')
+            st.plotly_chart(fig1, use_container_width=True)
+            st.caption("Shows seasonality in bookings.")
+        else:
+            st.info("No data for Bookings by Month with current filter.")
 
         # 2. Booking cancellation rate
-        cancel_rate = filtered_df['is_canceled'].mean()
-        st.metric("Cancellation Rate (%)", f"{cancel_rate*100:.2f}")
-        st.caption("Percent of bookings canceled.")
+        if not filtered_df.empty:
+            cancel_rate = filtered_df['is_canceled'].mean()
+            st.metric("Cancellation Rate (%)", f"{cancel_rate*100:.2f}")
+            st.caption("Percent of bookings canceled.")
+        else:
+            st.info("No data for Cancellation Rate with current filter.")
 
         # 3. Most common market segments (Pie)
         market_seg_counts = filtered_df['market_segment'].value_counts().reset_index()
-        fig2 = px.pie(market_seg_counts, values='market_segment', names='index', title="Market Segment Distribution")
-        st.plotly_chart(fig2, use_container_width=True)
+        if len(market_seg_counts) > 0:
+            fig2 = px.pie(market_seg_counts, values='market_segment', names='index', title="Market Segment Distribution")
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("No data to plot Market Segment Distribution for current filter selection.")
 
         # 4. Average lead time
-        st.metric("Average Lead Time (days)", f"{filtered_df['lead_time'].mean():.1f}")
-        st.caption("Average days between booking and arrival.")
+        if not filtered_df.empty:
+            st.metric("Average Lead Time (days)", f"{filtered_df['lead_time'].mean():.1f}")
+            st.caption("Average days between booking and arrival.")
+        else:
+            st.info("No data for Average Lead Time with current filter.")
 
         # 5. ADR over time (Line)
         adr_month = filtered_df.groupby('arrival_date_month')['adr'].mean().reindex(month_order).reset_index()
-        fig3 = px.line(adr_month, x='arrival_date_month', y='adr', title='Average Daily Rate (ADR) by Month')
-        st.plotly_chart(fig3, use_container_width=True)
+        if not adr_month['adr'].isna().all():
+            fig3 = px.line(adr_month, x='arrival_date_month', y='adr', title='Average Daily Rate (ADR) by Month')
+            st.plotly_chart(fig3, use_container_width=True)
+        else:
+            st.info("No data for ADR by Month with current filter.")
 
         # 6. Room type demand (Bar)
         room_counts = filtered_df['assigned_room_type'].value_counts().reset_index()
-        fig4 = px.bar(room_counts, x='index', y='assigned_room_type', labels={'index': 'Room Type', 'assigned_room_type': 'Count'}, title='Assigned Room Type Distribution')
-        st.plotly_chart(fig4, use_container_width=True)
+        if len(room_counts) > 0:
+            fig4 = px.bar(room_counts, x='index', y='assigned_room_type', labels={'index': 'Room Type', 'assigned_room_type': 'Count'}, title='Assigned Room Type Distribution')
+            st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.info("No data for Assigned Room Type Distribution with current filter.")
 
         # 7. Special requests (Bar)
         special_req = filtered_df['total_of_special_requests'].value_counts().sort_index().reset_index()
-        fig5 = px.bar(special_req, x='index', y='total_of_special_requests', labels={'index': 'Special Requests', 'total_of_special_requests': 'Count'}, title='Special Requests Count')
-        st.plotly_chart(fig5, use_container_width=True)
+        if len(special_req) > 0:
+            fig5 = px.bar(special_req, x='index', y='total_of_special_requests', labels={'index': 'Special Requests', 'total_of_special_requests': 'Count'}, title='Special Requests Count')
+            st.plotly_chart(fig5, use_container_width=True)
+        else:
+            st.info("No data for Special Requests Count with current filter.")
 
         # 8. Country-wise bookings (Top 10 Bar)
         country_counts = filtered_df['country'].value_counts().head(10).reset_index()
-        fig6 = px.bar(country_counts, x='index', y='country', labels={'index': 'Country', 'country': 'Bookings'}, title='Top 10 Countries by Booking Count')
-        st.plotly_chart(fig6, use_container_width=True)
+        if len(country_counts) > 0:
+            fig6 = px.bar(country_counts, x='index', y='country', labels={'index': 'Country', 'country': 'Bookings'}, title='Top 10 Countries by Booking Count')
+            st.plotly_chart(fig6, use_container_width=True)
+        else:
+            st.info("No data for Top 10 Countries by Booking Count with current filter.")
 
         # 9. Stay duration (weekend vs. week)
-        st.metric("Avg. Weekend Nights", f"{filtered_df['stays_in_weekend_nights'].mean():.2f}")
-        st.metric("Avg. Week Nights", f"{filtered_df['stays_in_week_nights'].mean():.2f}")
+        if not filtered_df.empty:
+            st.metric("Avg. Weekend Nights", f"{filtered_df['stays_in_weekend_nights'].mean():.2f}")
+            st.metric("Avg. Week Nights", f"{filtered_df['stays_in_week_nights'].mean():.2f}")
+        else:
+            st.info("No data for Stay Duration with current filter.")
 
         # 10. Booking changes (Bar)
         booking_chg = filtered_df['booking_changes'].value_counts().sort_index().reset_index()
-        fig7 = px.bar(booking_chg, x='index', y='booking_changes', labels={'index': 'Booking Changes', 'booking_changes': 'Count'}, title='Booking Changes')
-        st.plotly_chart(fig7, use_container_width=True)
-        st.caption("How often bookings are modified.")
+        if len(booking_chg) > 0:
+            fig7 = px.bar(booking_chg, x='index', y='booking_changes', labels={'index': 'Booking Changes', 'booking_changes': 'Count'}, title='Booking Changes')
+            st.plotly_chart(fig7, use_container_width=True)
+            st.caption("How often bookings are modified.")
+        else:
+            st.info("No data for Booking Changes with current filter.")
 
         # 11. Customer type breakdown (Pie)
         customer_type_counts = filtered_df['customer_type'].value_counts().reset_index()
-        fig8 = px.pie(customer_type_counts, values='customer_type', names='index', title="Customer Types")
-        st.plotly_chart(fig8, use_container_width=True)
+        if len(customer_type_counts) > 0:
+            fig8 = px.pie(customer_type_counts, values='customer_type', names='index', title="Customer Types")
+            st.plotly_chart(fig8, use_container_width=True)
+        else:
+            st.info("No data for Customer Types with current filter.")
 
         st.markdown("**Download filtered data:**")
-        st.markdown(get_table_download_link(filtered_df, "filtered_hotel_bookings.csv"), unsafe_allow_html=True)
+        if not filtered_df.empty:
+            st.markdown(get_table_download_link(filtered_df, "filtered_hotel_bookings.csv"), unsafe_allow_html=True)
+        else:
+            st.info("No data to download with current filter.")
 
     # ============= CLASSIFICATION TAB (Confusion, ROC Plotly) =============
     with tabs[1]:
@@ -158,77 +194,80 @@ if df is not None:
         for col in cat_features:
             clf_df[col] = LabelEncoder().fit_transform(clf_df[col])
 
-        X = clf_df[features]
-        y = clf_df['is_canceled']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        if not clf_df.empty:
+            X = clf_df[features]
+            y = clf_df['is_canceled']
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        models = {
-            "KNN": KNeighborsClassifier(),
-            "Decision Tree": DecisionTreeClassifier(random_state=42),
-            "Random Forest": RandomForestClassifier(random_state=42),
-            "Gradient Boosting": GradientBoostingClassifier(random_state=42)
-        }
+            models = {
+                "KNN": KNeighborsClassifier(),
+                "Decision Tree": DecisionTreeClassifier(random_state=42),
+                "Random Forest": RandomForestClassifier(random_state=42),
+                "Gradient Boosting": GradientBoostingClassifier(random_state=42)
+            }
 
-        metrics_table = []
-        y_preds = {}
-        y_scores = {}
+            metrics_table = []
+            y_preds = {}
+            y_scores = {}
 
-        for name, model in models.items():
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            y_preds[name] = y_pred
-            if hasattr(model, "predict_proba"):
-                y_scores[name] = model.predict_proba(X_test)[:,1]
-            else:
-                y_scores[name] = model.decision_function(X_test)
-            acc = accuracy_score(y_test, y_pred)
-            pre = precision_score(y_test, y_pred)
-            rec = recall_score(y_test, y_pred)
-            f1 = f1_score(y_test, y_pred)
-            metrics_table.append([name, acc, pre, rec, f1])
+            for name, model in models.items():
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                y_preds[name] = y_pred
+                if hasattr(model, "predict_proba"):
+                    y_scores[name] = model.predict_proba(X_test)[:,1]
+                else:
+                    y_scores[name] = model.decision_function(X_test)
+                acc = accuracy_score(y_test, y_pred)
+                pre = precision_score(y_test, y_pred)
+                rec = recall_score(y_test, y_pred)
+                f1 = f1_score(y_test, y_pred)
+                metrics_table.append([name, acc, pre, rec, f1])
 
-        metric_df = pd.DataFrame(metrics_table, columns=["Model", "Accuracy", "Precision", "Recall", "F1-score"])
-        st.dataframe(metric_df.style.highlight_max(axis=0), use_container_width=True)
+            metric_df = pd.DataFrame(metrics_table, columns=["Model", "Accuracy", "Precision", "Recall", "F1-score"])
+            st.dataframe(metric_df.style.highlight_max(axis=0), use_container_width=True)
 
-        st.markdown("#### Confusion Matrix")
-        selected_model = st.selectbox("Choose model for confusion matrix", options=list(models.keys()))
-        cm = confusion_matrix(y_test, y_preds[selected_model])
-        fig_cm = go.Figure(data=go.Heatmap(
-            z=cm,
-            x=['Not Canceled', 'Canceled'],
-            y=['Not Canceled', 'Canceled'],
-            colorscale='Blues',
-            text=cm,
-            texttemplate="%{text}"
-        ))
-        fig_cm.update_layout(title=f'Confusion Matrix: {selected_model}')
-        st.plotly_chart(fig_cm, use_container_width=True)
+            st.markdown("#### Confusion Matrix")
+            selected_model = st.selectbox("Choose model for confusion matrix", options=list(models.keys()))
+            cm = confusion_matrix(y_test, y_preds[selected_model])
+            fig_cm = go.Figure(data=go.Heatmap(
+                z=cm,
+                x=['Not Canceled', 'Canceled'],
+                y=['Not Canceled', 'Canceled'],
+                colorscale='Blues',
+                text=cm,
+                texttemplate="%{text}"
+            ))
+            fig_cm.update_layout(title=f'Confusion Matrix: {selected_model}')
+            st.plotly_chart(fig_cm, use_container_width=True)
 
-        st.markdown("#### ROC Curves")
-        fig_roc = go.Figure()
-        for name in models:
-            fpr, tpr, _ = roc_curve(y_test, y_scores[name])
-            fig_roc.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name=name))
-        fig_roc.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode='lines', name='Random', line=dict(dash='dash')))
-        fig_roc.update_layout(title="ROC Curve", xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
-        st.plotly_chart(fig_roc, use_container_width=True)
+            st.markdown("#### ROC Curves")
+            fig_roc = go.Figure()
+            for name in models:
+                fpr, tpr, _ = roc_curve(y_test, y_scores[name])
+                fig_roc.add_trace(go.Scatter(x=fpr, y=tpr, mode='lines', name=name))
+            fig_roc.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode='lines', name='Random', line=dict(dash='dash')))
+            fig_roc.update_layout(title="ROC Curve", xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
+            st.plotly_chart(fig_roc, use_container_width=True)
 
-        st.markdown("---")
-        st.markdown("#### Predict Cancellation on New Data")
-        uploaded_predict = st.file_uploader("Upload new hotel booking data (same columns as model features)", type=["csv", "xlsx"], key="clf_pred")
-        if uploaded_predict is not None:
-            if uploaded_predict.name.endswith(".csv"):
-                new_X = pd.read_csv(uploaded_predict)
-            else:
-                new_X = pd.read_excel(uploaded_predict)
-            for col in cat_features:
-                if col in new_X:
-                    new_X[col] = LabelEncoder().fit_transform(new_X[col])
-            selected_predict_model = st.selectbox("Select model for prediction", list(models.keys()), key="pred_model2")
-            preds = models[selected_predict_model].predict(new_X[features])
-            new_X['is_canceled_prediction'] = preds
-            st.dataframe(new_X.head())
-            st.markdown(get_table_download_link(new_X, "predicted_cancellation.csv"), unsafe_allow_html=True)
+            st.markdown("---")
+            st.markdown("#### Predict Cancellation on New Data")
+            uploaded_predict = st.file_uploader("Upload new hotel booking data (same columns as model features)", type=["csv", "xlsx"], key="clf_pred")
+            if uploaded_predict is not None:
+                if uploaded_predict.name.endswith(".csv"):
+                    new_X = pd.read_csv(uploaded_predict)
+                else:
+                    new_X = pd.read_excel(uploaded_predict)
+                for col in cat_features:
+                    if col in new_X:
+                        new_X[col] = LabelEncoder().fit_transform(new_X[col])
+                selected_predict_model = st.selectbox("Select model for prediction", list(models.keys()), key="pred_model2")
+                preds = models[selected_predict_model].predict(new_X[features])
+                new_X['is_canceled_prediction'] = preds
+                st.dataframe(new_X.head())
+                st.markdown(get_table_download_link(new_X, "predicted_cancellation.csv"), unsafe_allow_html=True)
+        else:
+            st.warning("Not enough data for classification modeling. Please check your filters or upload more data.")
 
     # ============= CLUSTERING TAB (KMeans, Plotly Elbow/Persona) =============
     with tabs[2]:
@@ -238,32 +277,35 @@ if df is not None:
         cluster_features = ['lead_time', 'adults', 'children', 'babies', 'previous_cancellations', 
                             'previous_bookings_not_canceled', 'booking_changes', 'adr', 'total_of_special_requests']
         cluster_df = df[cluster_features].dropna().copy()
-        scaler = StandardScaler()
-        X_cluster = scaler.fit_transform(cluster_df)
+        if not cluster_df.empty:
+            scaler = StandardScaler()
+            X_cluster = scaler.fit_transform(cluster_df)
 
-        k = st.slider("Select number of clusters (K)", 2, 10, 3)
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        cluster_labels = kmeans.fit_predict(X_cluster)
-        cluster_df['cluster'] = cluster_labels
+            k = st.slider("Select number of clusters (K)", 2, 10, 3)
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            cluster_labels = kmeans.fit_predict(X_cluster)
+            cluster_df['cluster'] = cluster_labels
 
-        inertia = []
-        for i in range(2, 11):
-            kmeans_i = KMeans(n_clusters=i, random_state=42).fit(X_cluster)
-            inertia.append(kmeans_i.inertia_)
-        fig_elbow = px.line(x=list(range(2,11)), y=inertia, markers=True, title="Elbow Method For Optimal K")
-        fig_elbow.update_xaxes(title="Number of Clusters")
-        fig_elbow.update_yaxes(title="Inertia")
-        st.plotly_chart(fig_elbow, use_container_width=True)
+            inertia = []
+            for i in range(2, 11):
+                kmeans_i = KMeans(n_clusters=i, random_state=42).fit(X_cluster)
+                inertia.append(kmeans_i.inertia_)
+            fig_elbow = px.line(x=list(range(2,11)), y=inertia, markers=True, title="Elbow Method For Optimal K")
+            fig_elbow.update_xaxes(title="Number of Clusters")
+            fig_elbow.update_yaxes(title="Inertia")
+            st.plotly_chart(fig_elbow, use_container_width=True)
 
-        st.markdown("#### Cluster Personas")
-        persona = cluster_df.groupby('cluster').mean().reset_index()
-        st.dataframe(persona)
+            st.markdown("#### Cluster Personas")
+            persona = cluster_df.groupby('cluster').mean().reset_index()
+            st.dataframe(persona)
 
-        # Download
-        full_df = df.copy()
-        full_df = full_df.iloc[cluster_df.index]
-        full_df['cluster'] = cluster_labels
-        st.markdown(get_table_download_link(full_df, "hotel_bookings_with_clusters.csv"), unsafe_allow_html=True)
+            # Download
+            full_df = df.copy()
+            full_df = full_df.iloc[cluster_df.index]
+            full_df['cluster'] = cluster_labels
+            st.markdown(get_table_download_link(full_df, "hotel_bookings_with_clusters.csv"), unsafe_allow_html=True)
+        else:
+            st.warning("Not enough data for clustering. Please check your filters or upload more data.")
 
     # ============= ASSOCIATION RULE MINING TAB (Apriori) =============
     with tabs[3]:
@@ -279,12 +321,18 @@ if df is not None:
 
         if len(apriori_cols) >= 2:
             assoc_df = df[apriori_cols].dropna().astype(str)
-            onehot = pd.get_dummies(assoc_df)
-            freq_items = apriori(onehot, min_support=min_support, use_colnames=True)
-            rules = association_rules(freq_items, metric="confidence", min_threshold=min_conf)
-            rules = rules.sort_values("confidence", ascending=False).head(10)
-            st.dataframe(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
-            st.caption("Top 10 associations by confidence")
+            if not assoc_df.empty:
+                onehot = pd.get_dummies(assoc_df)
+                freq_items = apriori(onehot, min_support=min_support, use_colnames=True)
+                rules = association_rules(freq_items, metric="confidence", min_threshold=min_conf)
+                if not rules.empty:
+                    rules = rules.sort_values("confidence", ascending=False).head(10)
+                    st.dataframe(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
+                    st.caption("Top 10 associations by confidence")
+                else:
+                    st.info("No association rules found for the selected settings.")
+            else:
+                st.warning("No data available for selected columns.")
         else:
             st.info("Please select at least 2 columns.")
 
@@ -297,46 +345,48 @@ if df is not None:
                         'previous_bookings_not_canceled', 'booking_changes', 'total_of_special_requests']
         reg_target = 'adr'
         reg_df = df[reg_features + [reg_target]].dropna().copy()
+        if not reg_df.empty:
+            Xr = reg_df[reg_features]
+            yr = reg_df[reg_target]
+            Xr_train, Xr_test, yr_train, yr_test = train_test_split(Xr, yr, test_size=0.2, random_state=42)
 
-        Xr = reg_df[reg_features]
-        yr = reg_df[reg_target]
-        Xr_train, Xr_test, yr_train, yr_test = train_test_split(Xr, yr, test_size=0.2, random_state=42)
+            regressors = {
+                "Linear Regression": LinearRegression(),
+                "Ridge Regression": Ridge(),
+                "Lasso Regression": Lasso(),
+                "Decision Tree Regression": DecisionTreeRegressor(random_state=42)
+            }
 
-        regressors = {
-            "Linear Regression": LinearRegression(),
-            "Ridge Regression": Ridge(),
-            "Lasso Regression": Lasso(),
-            "Decision Tree Regression": DecisionTreeRegressor(random_state=42)
-        }
+            reg_results = []
+            reg_preds = {}
+            for name, reg in regressors.items():
+                reg.fit(Xr_train, yr_train)
+                pred = reg.predict(Xr_test)
+                reg_preds[name] = pred
+                mse = np.mean((pred - yr_test)**2)
+                r2 = reg.score(Xr_test, yr_test)
+                reg_results.append([name, mse, r2])
 
-        reg_results = []
-        reg_preds = {}
-        for name, reg in regressors.items():
-            reg.fit(Xr_train, yr_train)
-            pred = reg.predict(Xr_test)
-            reg_preds[name] = pred
-            mse = np.mean((pred - yr_test)**2)
-            r2 = reg.score(Xr_test, yr_test)
-            reg_results.append([name, mse, r2])
+            reg_table = pd.DataFrame(reg_results, columns=["Model", "MSE", "R2"])
+            st.dataframe(reg_table.style.highlight_max(axis=0), use_container_width=True)
 
-        reg_table = pd.DataFrame(reg_results, columns=["Model", "MSE", "R2"])
-        st.dataframe(reg_table.style.highlight_max(axis=0), use_container_width=True)
+            best_idx = reg_table["R2"].idxmax()
+            best_name = reg_table.iloc[best_idx]["Model"]
+            best_pred = reg_preds[best_name]
+            fig_pred = px.scatter(x=yr_test, y=best_pred, labels={'x': 'Actual ADR', 'y': 'Predicted ADR'}, title=f"Actual vs. Predicted ADR ({best_name})")
+            fig_pred.add_shape(type="line", x0=yr_test.min(), y0=yr_test.min(), x1=yr_test.max(), y1=yr_test.max(), line=dict(color="red", dash="dash"))
+            st.plotly_chart(fig_pred, use_container_width=True)
 
-        best_idx = reg_table["R2"].idxmax()
-        best_name = reg_table.iloc[best_idx]["Model"]
-        best_pred = reg_preds[best_name]
-        fig_pred = px.scatter(x=yr_test, y=best_pred, labels={'x': 'Actual ADR', 'y': 'Predicted ADR'}, title=f"Actual vs. Predicted ADR ({best_name})")
-        fig_pred.add_shape(type="line", x0=yr_test.min(), y0=yr_test.min(), x1=yr_test.max(), y1=yr_test.max(), line=dict(color="red", dash="dash"))
-        st.plotly_chart(fig_pred, use_container_width=True)
-
-        st.markdown("### Quick Insights from Regression")
-        st.write("- **Higher lead times tend to be associated with higher ADRs (advance bookings pay more).**")
-        st.write("- **Special requests often correlate with higher revenue per room.**")
-        st.write("- **Previous cancellations negatively impact ADR.**")
-        st.write("- **Family size (adults/children) has a mild impact on ADR.**")
-        st.write("- **Booking changes slightly decrease ADR.**")
-        st.write("- **Ridge/Lasso can be used to regularize and avoid overfitting.**")
-        st.write("- **Decision Trees can identify non-linear patterns in pricing.**")
+            st.markdown("### Quick Insights from Regression")
+            st.write("- **Higher lead times tend to be associated with higher ADRs (advance bookings pay more).**")
+            st.write("- **Special requests often correlate with higher revenue per room.**")
+            st.write("- **Previous cancellations negatively impact ADR.**")
+            st.write("- **Family size (adults/children) has a mild impact on ADR.**")
+            st.write("- **Booking changes slightly decrease ADR.**")
+            st.write("- **Ridge/Lasso can be used to regularize and avoid overfitting.**")
+            st.write("- **Decision Trees can identify non-linear patterns in pricing.**")
+        else:
+            st.warning("Not enough data for regression analysis. Please check your filters or upload more data.")
 
 else:
     st.info("No data loaded. Please upload your hotel_bookings.xlsx or CSV file.")
